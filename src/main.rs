@@ -1,15 +1,18 @@
+use actix::Actor;
 use actix_web::{
-    error::JsonPayloadError,
     middleware,
     web::{self, Data},
     App, HttpResponse, HttpServer, Result,
 };
-use models::custom_api_errors::ApiError;
-use repositories::database::Database;
+
+use configs::{cors_config, json_config, json_validator_config};
+use repositories::{cache::Cache, database::Database};
 use routes::routes::config;
 use serde::Serialize;
 use utils::{db, envs};
+use websocket::server;
 
+mod configs;
 mod extractors;
 mod middlewares;
 mod models;
@@ -17,6 +20,7 @@ mod repositories;
 mod routes;
 mod schema;
 mod utils;
+mod websocket;
 
 #[derive(Debug, Serialize)]
 pub struct Response {
@@ -26,6 +30,8 @@ pub struct Response {
 #[derive(Clone)]
 pub struct AppContext {
     pub db: Database,
+    pub cache: Cache,
+    pub cookie_secret: String,
 }
 
 async fn not_found() -> Result<HttpResponse> {
@@ -36,60 +42,39 @@ async fn not_found() -> Result<HttpResponse> {
     Ok(HttpResponse::NotFound().json(response))
 }
 
-fn json_config() -> web::JsonConfig {
-    web::JsonConfig::default().error_handler(|err, _req| match err {
-        JsonPayloadError::ContentType => actix_web::error::InternalError::from_response(
-            err,
-            HttpResponse::UnsupportedMediaType().json(ApiError {
-                status: 415,
-                message: "Unsupported media type".to_string(),
-            }),
-        )
-        .into(),
-        JsonPayloadError::Deserialize(json_err) if json_err.is_data() => {
-            actix_web::error::InternalError::from_response(
-                "idk",
-                HttpResponse::BadRequest().json(ApiError {
-                    status: 400,
-                    message: json_err.to_string(),
-                }),
-            )
-            .into()
-        }
-        _ => actix_web::error::InternalError::from_response(
-            "idk",
-            HttpResponse::BadRequest().json(ApiError {
-                status: 400,
-                message: err.to_string(),
-            }),
-        )
-        .into(),
-    })
-}
-
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     std::env::set_var("RUST_LOG", "debug");
     env_logger::init();
 
     let db = Database::init();
+    let cache = Cache::init();
 
-    db::run_migrations(&mut *db.connection());
-
-    let app_context = Data::new(AppContext { db });
+    db::run_migrations(&mut *db.connection().expect("Could not get database connection"));
 
     let cookies_secret = envs::cookie_secret();
+
+    let app_context = Data::new(AppContext {
+        db: db.clone(),
+        cache: cache.clone(),
+        cookie_secret: cookies_secret.clone(),
+    });
+
+    let server = server::CharadeServer::new(db, cache).start();
 
     HttpServer::new(move || {
         App::new()
             .wrap(middleware::Compress::default())
             .app_data(json_config())
+            .app_data(json_validator_config())
             .app_data(app_context.clone())
+            .app_data(web::Data::new(server.clone()))
             .configure(config)
             .wrap(middlewares::session::session_middleware(
                 cookies_secret.to_owned(),
             ))
             .default_service(web::route().to(not_found))
+            .wrap(cors_config())
             .wrap(middleware::NormalizePath::trim())
             .wrap(middleware::Logger::default())
     })

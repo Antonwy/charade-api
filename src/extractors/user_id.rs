@@ -9,7 +9,7 @@ use crate::{
     AppContext,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct UserId(pub String);
 
 impl UserId {
@@ -50,6 +50,12 @@ impl From<String> for UserId {
 impl Into<String> for UserId {
     fn into(self) -> String {
         self.0
+    }
+}
+
+impl From<&str> for UserId {
+    fn from(user_id: &str) -> Self {
+        Self(user_id.to_string())
     }
 }
 

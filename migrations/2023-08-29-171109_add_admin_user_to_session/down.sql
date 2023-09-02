@@ -1,3 +1,3 @@
 -- This file should undo anything in `up.sql`
 
-drop table if exists words;
+alter table sessions drop column admin_user_id;

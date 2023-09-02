@@ -3,12 +3,14 @@
 #![allow(unused)]
 #![allow(clippy::all)]
 
+
 use chrono::NaiveDateTime;
 #[derive(Queryable, Debug, Identifiable)]
 pub struct Session {
     pub id: String,
     pub public: bool,
     pub created_at: NaiveDateTime,
+    pub admin_user_id: String,
 }
 
 #[derive(Queryable, Debug, Identifiable)]
@@ -24,3 +26,13 @@ pub struct UsersSession {
     pub user_id: String,
     pub session_id: String,
 }
+
+#[derive(Queryable, Debug, Identifiable)]
+#[diesel(primary_key(word, session_id))]
+pub struct Word {
+    pub word: String,
+    pub created_at: NaiveDateTime,
+    pub session_id: String,
+    pub user_id: String,
+}
+

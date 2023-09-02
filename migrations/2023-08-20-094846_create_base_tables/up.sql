@@ -5,7 +5,7 @@ create table users (
 );
 
 create table sessions (
-  id varchar(50) primary key,
+  id varchar(20) primary key,
   public boolean default false not null,
   created_at timestamp default now() not null
 );
