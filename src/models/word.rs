@@ -20,8 +20,3 @@ pub struct NewWord {
     pub session_id: String,
     pub user_id: String,
 }
-
-#[derive(Deserialize, Debug)]
-pub struct NewWordDto {
-    pub word: String,
-}

@@ -1,7 +1,5 @@
 use std::{
-    cell::RefCell,
     collections::HashMap,
-    rc::Rc,
     sync::{Arc, Mutex},
 };
 
@@ -14,10 +12,10 @@ use crate::{
     websocket::{messages::ServerMessage, session::WsCharadeSession},
 };
 
-use self::utils::utils::{Result, ServerError, ServerResult};
+use self::utils::{Result, ServerError, ServerResult};
 
-pub mod handlers;
-pub mod utils;
+mod handlers;
+mod utils;
 
 #[derive(Debug, Clone)]
 pub struct CharadeServer {

@@ -4,15 +4,14 @@ use actix_web::{
     web::{self, Data},
     App, HttpResponse, HttpServer, Result,
 };
-
-use configs::{cors_config, json_config, json_validator_config};
+use api_configs::{cors_config, json_config, json_validator_config};
 use repositories::{cache::Cache, database::Database};
-use routes::routes::config;
+use routes::config;
 use serde::Serialize;
 use utils::{db, envs};
 use websocket::server;
 
-mod configs;
+mod api_configs;
 mod extractors;
 mod middlewares;
 mod models;

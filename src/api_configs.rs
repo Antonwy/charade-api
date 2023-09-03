@@ -35,9 +35,7 @@ pub fn json_validator_config() -> JsonValidatorConfig {
         let detail = err.to_string();
 
         let resp = match &err {
-            JsonValidatorError::JsonPayloadError(err) => {
-                json_payload_error_to_response(&err.clone())
-            }
+            JsonValidatorError::JsonPayloadError(err) => json_payload_error_to_response(err),
             JsonValidatorError::Validate(errors) => {
                 let flattened_errors = flatten_errors(errors);
 

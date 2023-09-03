@@ -1,10 +1,9 @@
 use std::time::Instant;
 
 use actix::Addr;
-use actix_session::Session;
 use actix_web::{
     cookie::{Cookie, CookieJar, Key},
-    get, web, HttpRequest, HttpResponse, ResponseError,
+    get, web, HttpRequest, HttpResponse,
 };
 use actix_web_actors::ws;
 use serde::Deserialize;

@@ -1,7 +1,7 @@
 use actix::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::models::{custom_api_errors::ApiError, session::Session, user::User};
+use crate::models::{custom_api_errors::ApiError, user::User};
 
 use super::session::WsCharadeSession;
 
@@ -58,7 +58,6 @@ pub enum ServerMessage {
     Error {
         error: String,
     },
-    None,
 }
 
 impl From<ApiError> for ServerMessage {

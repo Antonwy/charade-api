@@ -9,9 +9,9 @@ use crate::{
     extractors::user_id::UserId,
     models::{
         custom_api_errors::ApiError,
-        dtos::session::NewSessionDto,
+        dtos::{session::NewSessionDto, word::NewWordDto},
         session::{NewSession, SessionInfoPersonal},
-        word::{NewWord, NewWordDto},
+        word::NewWord,
     },
     AppContext,
 };
@@ -124,7 +124,7 @@ async fn join_session(
 async fn add_word_to_session(
     ctx: Data<AppContext>,
     session_id: Path<String>,
-    new_word: web::Json<NewWordDto>,
+    new_word: Json<NewWordDto>,
     user_id: UserId,
 ) -> Result<impl Responder, ApiError> {
     let new_word = NewWord {

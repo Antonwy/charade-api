@@ -47,9 +47,9 @@ impl From<String> for UserId {
     }
 }
 
-impl Into<String> for UserId {
-    fn into(self) -> String {
-        self.0
+impl From<UserId> for String {
+    fn from(user_id: UserId) -> Self {
+        user_id.0
     }
 }
 
