@@ -1,4 +1,3 @@
-
 use actix::Addr;
 use actix_web::web;
 
@@ -60,8 +59,15 @@ impl ServerMessageHandler for ServerResult {
 
 #[derive(Debug, Clone)]
 pub enum ServerError {
-    Private { id: String, error: String },
-    Broadcast { session_id: String, error: String },
+    Private {
+        id: String,
+        error: String,
+    },
+    #[allow(dead_code)]
+    Broadcast {
+        session_id: String,
+        error: String,
+    },
     None,
 }
 
@@ -206,12 +212,6 @@ impl CharadeServer {
             .filter(|id| self.user_id_in_current_sessions(id))
             .cloned()
             .collect()
-    }
-
-    pub fn get_session_user_keys(&self) -> Vec<String> {
-        let sessions_lock = self.sessions.lock().unwrap();
-
-        sessions_lock.keys().cloned().collect()
     }
 
     pub fn user_id_in_current_sessions(&self, user_id: &str) -> bool {
