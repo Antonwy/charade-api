@@ -3,14 +3,12 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use actix::{Actor, Addr, Context};
-use actix_web::web;
-
 use crate::{
     models::{user::User, word::NewWord},
     repositories::{cache::Cache, database::Database},
     websocket::{messages::ServerMessage, session::WsCharadeSession},
 };
+use actix::{Actor, Addr, Context};
 
 use self::utils::{Result, ServerError, ServerResult};
 
@@ -36,34 +34,30 @@ impl CharadeServer {
     pub async fn add_word_to_session(&self, session_id: &str, word: &str, user_id: &str) -> Result {
         let db = self.db.clone();
 
-        let session_id_clone = session_id.to_owned();
-        let word_clone = word.to_owned();
-        let user_id_clone = user_id.to_owned();
-
         let error = ServerError::Private {
             id: user_id.to_string(),
             error: "Could not add word to session".to_string(),
         };
 
-        let block_res = web::block(move || {
-            db.add_word_to_session(NewWord {
-                session_id: session_id_clone.clone(),
-                word: word_clone,
-                user_id: user_id_clone,
+        let add_word = db
+            .add_word_to_session(NewWord {
+                session_id: session_id.to_string(),
+                word: word.to_string(),
+                user_id: user_id.to_string(),
+            })
+            .await
+            .map_err(|_| ServerError::Private {
+                id: user_id.to_string(),
+                error: format!("Word '{word}' already in session"),
             })?;
-            db.get_words_by_session_id(&session_id_clone)
-        })
-        .await;
 
-        let Ok(words_res) = block_res else {
-            log::error!("Could not add word to session: {:?}", block_res.err());
-            return Err(error);
-        };
-
-        let Ok(words) = words_res else {
-            log::error!("Could not add word to session: {:?}", words_res.err());
-            return Err(ServerError::Private { id: user_id.to_string(), error: format!("Word '{word}' already in session") });
-        };
+        let words =
+            db.get_words_by_session_id(&session_id)
+                .await
+                .map_err(|_| ServerError::Private {
+                    id: user_id.to_string(),
+                    error: format!("Word '{word}' already in session"),
+                })?;
 
         Ok(ServerResult::Multiple(vec![
             ServerResult::Broadcast {
@@ -89,21 +83,13 @@ impl CharadeServer {
 
     pub async fn handle_update_users(&self, session_id: &str) -> Result<ServerMessage> {
         let db = self.db.clone();
-        let session_id_clone = session_id.to_owned();
 
         let error = ServerError::None;
 
-        let block_res = web::block(move || db.get_users_by_session_id(&session_id_clone)).await;
-
-        let Ok(session_res) = block_res else {
-            log::error!("Could get session users: {:?}", block_res.err());
-            return Err(error);
-        };
-
-        let Ok(session_users) = session_res else {
-            log::error!("Could get session users: {:?}", session_res.err());
-            return Err(error);
-        };
+        let session_users = db
+            .get_users_by_session_id(&session_id)
+            .await
+            .map_err(|_| ServerError::None)?;
 
         let online_users: Vec<User> = session_users
             .iter()

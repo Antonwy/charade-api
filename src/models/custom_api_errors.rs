@@ -7,6 +7,8 @@ use diesel::result::{DatabaseErrorKind, Error as DieselError};
 use redis::RedisError;
 use serde::{Deserialize, Serialize};
 
+use crate::websocket;
+
 pub type Result<T, E = ApiError> = std::result::Result<T, E>;
 
 #[derive(Debug, Serialize, Deserialize)]

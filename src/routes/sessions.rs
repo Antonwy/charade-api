@@ -28,8 +28,10 @@ async fn create_session(
         admin_user_id: user_id.0,
     };
 
-    let created_session = web::block(move || ctx.db.create_session(new_session))
-        .await?
+    let created_session = ctx
+        .db
+        .create_session(new_session)
+        .await
         .map_err(|e| match e {
             ApiError::UniqueViolation { .. } => ApiError::UniqueViolation {
                 message: "Session already exists".to_string(),
@@ -42,7 +44,7 @@ async fn create_session(
 
 #[get("")]
 async fn get_sessions(ctx: Data<AppContext>) -> Result<impl Responder, ApiError> {
-    let sessions = web::block(move || ctx.db.get_sessions()).await??;
+    let sessions = ctx.db.get_sessions().await?;
     Ok(HttpResponse::Ok().json(sessions))
 }
 
@@ -51,7 +53,7 @@ async fn get_all_personal_sessions(
     user_id: UserId,
     ctx: Data<AppContext>,
 ) -> Result<impl Responder, ApiError> {
-    let sessions = web::block(move || ctx.db.get_sessions_by_user(&user_id.0)).await??;
+    let sessions = ctx.db.get_sessions_by_user(&user_id.0).await?;
 
     Ok(HttpResponse::Ok().json(sessions))
 }
@@ -61,7 +63,7 @@ async fn get_session(
     session_id: Path<String>,
     ctx: Data<AppContext>,
 ) -> Result<impl Responder, ApiError> {
-    let session = web::block(move || ctx.db.get_session_by_id(&session_id.into_inner())).await??;
+    let session = ctx.db.get_session_by_id(&session_id.into_inner()).await?;
     Ok(HttpResponse::Ok().json(session))
 }
 
@@ -71,8 +73,7 @@ async fn get_personal_session(
     ctx: Data<AppContext>,
     user_id: UserId,
 ) -> Result<impl Responder, ApiError> {
-    let session_info =
-        web::block(move || ctx.db.get_session_info(&session_id.into_inner())).await??;
+    let session_info = ctx.db.get_session_info(&session_id.into_inner()).await?;
 
     Ok(HttpResponse::Ok().json(SessionInfoPersonal {
         my_id: user_id.clone().0,
@@ -98,8 +99,9 @@ async fn join_session(
     let session_id_clone = session_id.clone();
     let db_cloned = ctx.db.clone();
 
-    let result = web::block(move || db_cloned.join_session(&session_id_clone, &user_id_clone.0))
-        .await?
+    let result = db_cloned
+        .join_session(&session_id_clone, &user_id_clone.0)
+        .await
         .map_err(|e| match e {
             ApiError::NotFound { .. } | ApiError::ForeignKeyViolation { .. } => {
                 ApiError::NotFound {
@@ -111,7 +113,7 @@ async fn join_session(
 
     match result {
         Err(ApiError::UniqueViolation { .. }) => {
-            let session = web::block(move || ctx.db.get_session_by_id(&session_id)).await??;
+            let session = ctx.db.get_session_by_id(&session_id).await?;
 
             Ok(HttpResponse::Ok().json(session))
         }
@@ -133,7 +135,7 @@ async fn add_word_to_session(
         user_id: user_id.into(),
     };
 
-    let word = web::block(move || ctx.db.add_word_to_session(new_word)).await??;
+    let word = ctx.db.add_word_to_session(new_word).await?;
 
     Ok(HttpResponse::Ok().json(word))
 }

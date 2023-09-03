@@ -31,21 +31,21 @@ async fn authenticate(
     let user: User;
 
     if let Some(user_id) = user_id {
-        user = web::block(move || {
-            ctx.db.update_user(NewUser {
+        user = ctx
+            .db
+            .update_user(NewUser {
                 id: user_id,
                 name: user_body.name.map(|name| name.trim().to_string()),
             })
-        })
-        .await??;
+            .await?;
     } else {
-        user = web::block(move || {
-            ctx.db.create_user(NewUser {
+        user = ctx
+            .db
+            .create_user(NewUser {
                 id: uuid::Uuid::new_v4().to_string(),
                 name: user_body.name.map(|name| name.trim().to_string()),
             })
-        })
-        .await??;
+            .await?;
 
         session.insert(SESSION_USER_ID, user.id.clone())?;
     }
@@ -55,7 +55,7 @@ async fn authenticate(
 
 #[get("/account")]
 async fn get_account(user_id: UserId, ctx: Data<AppContext>) -> Result<impl Responder, ApiError> {
-    let user = web::block(move || ctx.db.get_user_by_id(&user_id.0)).await??;
+    let user = ctx.db.get_user_by_id(&user_id.0).await?;
 
     Ok(HttpResponse::Ok().json(user))
 }
@@ -78,7 +78,7 @@ async fn get_full_user_info(
     user_id: UserId,
     ctx: Data<AppContext>,
 ) -> Result<impl Responder, ApiError> {
-    let user = web::block(move || ctx.db.get_full_user_info(&user_id.0)).await??;
+    let user = ctx.db.get_full_user_info(&user_id.0).await?;
 
     Ok(HttpResponse::Ok().json(user))
 }

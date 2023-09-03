@@ -1,6 +1,3 @@
-use actix::Addr;
-use actix_web::web;
-
 use crate::{
     models::custom_api_errors::ApiError,
     repositories::cache::Cache,
@@ -8,6 +5,7 @@ use crate::{
         messages::ServerMessage, server::CharadeServer, session::WsCharadeSession, ClientMessage,
     },
 };
+use actix::Addr;
 
 #[async_trait::async_trait]
 pub trait ServerMessageHandler {
@@ -126,9 +124,7 @@ impl CharadeServer {
         msg: ServerMessage,
         exclude: Option<String>,
     ) -> Result<(), ApiError> {
-        let session_id = session_id.to_owned();
-
-        let session_ids = self.get_cached_session_users(&session_id).await;
+        let session_ids = self.get_cached_session_users(session_id).await;
 
         self.broadcast(
             session_ids
@@ -176,21 +172,11 @@ impl CharadeServer {
         let ids = match res {
             Ok(users) => users,
             Err(_) => {
-                let db = self.db.clone();
-                let session_id_owned = session_id.to_owned();
-
-                let blocking_res =
-                    web::block(move || db.get_users_by_session_id(&session_id_owned)).await;
-
-                let Ok(session_res) = blocking_res else {
-                        log::error!("Could not get session users: {:?}", blocking_res.err());
-                        return vec![];
-                    };
-
-                let Ok(session_users) = session_res else {
-                        log::error!("Could not get session users: {:?}", session_res.err());
-                        return vec![];
-                    };
+                let session_users = self
+                    .db
+                    .get_users_by_session_id(session_id)
+                    .await
+                    .unwrap_or(vec![]);
 
                 let cache_res = self
                     .cache

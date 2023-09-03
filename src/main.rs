@@ -8,7 +8,7 @@ use api_configs::{cors_config, json_config, json_validator_config};
 use repositories::{cache::Cache, database::Database};
 use routes::config;
 use serde::Serialize;
-use utils::{db, envs};
+use utils::envs;
 use websocket::server;
 
 mod api_configs;
@@ -46,10 +46,8 @@ async fn main() -> std::io::Result<()> {
     std::env::set_var("RUST_LOG", "debug");
     env_logger::init();
 
-    let db = Database::init();
+    let db = Database::init().await;
     let cache = Cache::init();
-
-    db::run_migrations(&mut *db.connection().expect("Could not get database connection"));
 
     let cookies_secret = envs::cookie_secret();
 

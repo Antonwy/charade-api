@@ -1,7 +1,11 @@
-use std::future::{ready, Ready};
+use std::{
+    future::{ready, Ready},
+    pin::Pin,
+};
 
 use actix_session::SessionExt;
 use actix_web::{dev::Payload, web, FromRequest, HttpRequest};
+use futures_util::Future;
 
 use crate::{
     models::{custom_api_errors::ApiError, user::NewUser},
@@ -13,7 +17,7 @@ use crate::{
 pub struct UserId(pub String);
 
 impl UserId {
-    fn extract(req: &HttpRequest) -> Result<UserId, ApiError> {
+    async fn extract(req: HttpRequest) -> Result<UserId, ApiError> {
         let session = req.get_session();
         let ctx = req
             .app_data::<web::Data<AppContext>>()
@@ -31,7 +35,7 @@ impl UserId {
                     name: None,
                 };
 
-                let user = ctx.db.create_user(new_user)?;
+                let user = ctx.db.create_user(new_user).await?;
 
                 session.insert(SESSION_USER_ID, user.id.clone())?;
 
@@ -61,9 +65,16 @@ impl From<&str> for UserId {
 
 impl FromRequest for UserId {
     type Error = ApiError;
-    type Future = Ready<Result<Self, Self::Error>>;
+    type Future = Pin<Box<dyn Future<Output = Result<Self, Self::Error>>>>;
 
     fn from_request(req: &HttpRequest, _: &mut Payload) -> Self::Future {
-        ready(Self::extract(req))
+        let req_clone = req.clone();
+
+        Box::pin(async {
+            match UserId::extract(req_clone).await {
+                Ok(user_id) => Ok(user_id),
+                Err(e) => Err(e),
+            }
+        })
     }
 }
