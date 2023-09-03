@@ -1,7 +1,4 @@
-use std::{
-    future::{ready, Ready},
-    pin::Pin,
-};
+use std::pin::Pin;
 
 use actix_session::SessionExt;
 use actix_web::{dev::Payload, web, FromRequest, HttpRequest};

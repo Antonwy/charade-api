@@ -34,25 +34,19 @@ impl CharadeServer {
     pub async fn add_word_to_session(&self, session_id: &str, word: &str, user_id: &str) -> Result {
         let db = self.db.clone();
 
-        let error = ServerError::Private {
+        db.add_word_to_session(NewWord {
+            session_id: session_id.to_string(),
+            word: word.to_string(),
+            user_id: user_id.to_string(),
+        })
+        .await
+        .map_err(|_| ServerError::Private {
             id: user_id.to_string(),
-            error: "Could not add word to session".to_string(),
-        };
-
-        let add_word = db
-            .add_word_to_session(NewWord {
-                session_id: session_id.to_string(),
-                word: word.to_string(),
-                user_id: user_id.to_string(),
-            })
-            .await
-            .map_err(|_| ServerError::Private {
-                id: user_id.to_string(),
-                error: format!("Word '{word}' already in session"),
-            })?;
+            error: format!("Word '{word}' already in session"),
+        })?;
 
         let words =
-            db.get_words_by_session_id(&session_id)
+            db.get_words_by_session_id(session_id)
                 .await
                 .map_err(|_| ServerError::Private {
                     id: user_id.to_string(),
@@ -84,10 +78,8 @@ impl CharadeServer {
     pub async fn handle_update_users(&self, session_id: &str) -> Result<ServerMessage> {
         let db = self.db.clone();
 
-        let error = ServerError::None;
-
         let session_users = db
-            .get_users_by_session_id(&session_id)
+            .get_users_by_session_id(session_id)
             .await
             .map_err(|_| ServerError::None)?;
 
